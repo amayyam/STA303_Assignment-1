@@ -1,20 +1,26 @@
 ---
-title: "STA303 - Assignment 1"
+title: "How do literacy and age of a marriage affect family size?"
 author: "Maryam Ansari & Alexia Xu"
 date: January 27, 2025
 output: pdf_document
+toc: true
+bibliography: references.bib
 ---
+\newpage
 
-Portugal fertility survey 1979
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
 
-- [More information](https://wfs.dhsprogram.com/index.cfm?ccode=pt)
-- [data source](https://wfs.dhsprogram.com/)
-- [data dictionary](https://wfs.dhsprogram.com/pt/ptsr01.dct)
+```{r libraries, include=FALSE}
+library(tidyr)
+library(kableExtra)
+library(tidyverse)
+library(ggplot2)
+```
 
-File `portugal.RData` on the course web site.  Code in `Assignment1.Rmd`
 
-
-```{r dataDownload, include=FALSE}
+```{r dataDownload, echo= FALSE, include=FALSE}
 pUrl = 'http://wfs.dhsprogram.com/pt/ptsr01.dat'
 pName = file.path(tempdir(), 'portugal.dat')
 if(!file.exists(pName)) {
@@ -86,22 +92,139 @@ portugal$region = relevel(portugal$region, 'lt10k')
 if(FALSE) save(portugal, file='portugal.RData')
 ```
 
-```{r thedata}
+```{r thedata, echo=FALSE}
 head(portugal)
 table(portugal$region)
 ```
 
-Region is `lt10k` rural areas (less than 10,000 people), towns of size 10-20k, 20k+, and the two largest cities (Lisbon and Porto).
+\newpage
+
+# Introduction
+
+## Checklist
+
+- Strong and relevant motivation as to why it is important to study this particular research question
+- Summaries of the main results from three peer-reviewed articles on same or relevant topic
+- Make sure that articles talk about which variables have been shown to be related to the response variables in your data.
 
 
-The Question: 
+## Actual Text
 
-- How do literacy and age of marriage affect family size?
-- After we account for known explanatory variables, how much variation (if any) is there in birth rates?
 
-Notes: 
 
-- By European standards Portugal is a poor country, and in 1980 it had the same GDP per capita as Mexico.
-- It's well known that families are larger in rural areas (i.e. `region` is a confounder).
-- You should proceed as if an expert in this area has told you that you do not need to consider zero-inflation.  Zero-inflated models do not fit well to this data, probably because birth rates are lower than Fiji, many zeros are expected, and the likelihood is flat.
+
+\newpage
+
+# Methods
+
+## Checklist
+
+- Choice of GLM model that will be fit
+- Justification for model based on data and research goal
+- Process for decision on the appropriateness of the model.
+
+## Planning
+
+- Categorical: age, ageMarried, region
+- Binary: Literacy
+- Response: children -> count variable
+
+- Poisson should be best since response is a count variable?
+- Maybe neg binomial?
+
+```{r EDA, include=FALSE}
+# Distribution of family size
+portugal %>%
+  ggplot(aes(x = children)) + 
+  geom_bar(fill = "steelblue") + 
+  labs(title = "Distribution of Family Size", x = "Number of Children", y = "Frequency")
+
+# Literacy and family size
+ggplot(portugal, aes(x = literacy, y = children)) + 
+  geom_boxplot(fill = "lightgreen") + 
+  labs(title = "Family Size by Literacy", x = "Literacy", y = "Family Size")
+
+```
+
+Fitting the model:
+```{r model, include=FALSE}
+# Fit a Poisson model
+poisson_model <- glm(children ~ literacy + ageMarried + region, 
+                     family = poisson(link = "log"), data = portugal)
+
+# Summary of the model
+summary(poisson_model)
+
+```
+
+Checking for overdispersion:
+```{r}
+# Check overdispersion
+residual_deviance <- deviance(poisson_model)
+df_residual <- df.residual(poisson_model)
+overdispersion_ratio <- residual_deviance / df_residual
+
+cat("Residual Deviance:", residual_deviance, "\n")
+cat("Degrees of Freedom:", df_residual, "\n")
+cat("Overdispersion Ratio:", overdispersion_ratio, "\n")
+
+```
+
+**ChatGPT interpretation of overdispersion ratio** 
+- If the overdispersion ratio is close to 1, the Poisson model is a good fit for the data, as the variance roughly equals the mean (an assumption of the Poisson distribution).
+- A ratio of 1.177 is slightly greater than 1, suggesting mild overdispersion (the variance is slightly greater than the mean). 
+
+
+Residual Analysis:
+```{r}
+# Residual diagnostics
+par(mfrow = c(2, 2))
+plot(poisson_model)
+```
+
+
+## Actual Text
+
+
+
+\newpage
+
+# Results
+
+## Checklist
+
+- Statistical summaries of the data and variables being considered 
+- Discussion of the data distributions and their preliminary implications regarding the research question.
+- Presentation of model results (e.g. estimated coefficients, standard errors, CIs) and evidence supporting
+inclusion/exclusion of predictors.
+- Discussion of the process and results involved in developing a suitable model that addresses the
+research goal
+
+## Actual Text
+
+
+
+\newpage
+
+# Conclusion
+
+## Checklist
+
+- A formal statistical interpretation of a coefficient of at minimum one of the most important or relevant
+predictors.
+- A general summary of what your model as a whole says about the research question.
+- A comparison to the literature results summarized in the introduction section, commenting on what is
+similar and what is different.
+
+
+
+## Actual Text
+
+
+
+
+
+\newpage
+
+# References
 
